@@ -9,23 +9,28 @@ PoseNet example using p5.js
 === */
 
 let video;
-let poseNet;
-let poses = [];
+let handPose;
+let hands = [];
 
 function setup() {
-  createCanvas(640, 480);
+  // 1. 建立全螢幕畫布
+  createCanvas(windowWidth, windowHeight);
   video = createCapture(VIDEO);
-  video.size(width, height);
+  video.size(640, 480);
 
-  // Create a new poseNet method with a single detection
-  poseNet = ml5.poseNet(video, modelReady);
-  // This sets up an event that fills the global variable "poses"
-  // with an array every time new poses are detected
-  poseNet.on('pose', function(results) {
-    poses = results;
+  // 建立 handPose 手勢偵測模型 (ml5 v1.0.0+)
+  handPose = ml5.handPose(video, modelReady);
+  // 持續偵測手部並更新結果
+  handPose.detectStart(video, results => {
+    hands = results;
   });
   // Hide the video element, and just show the canvas
   video.hide();
+}
+
+// 視窗大小改變時，重新調整畫布
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
 }
 
 function modelReady() {
@@ -33,43 +38,53 @@ function modelReady() {
 }
 
 function draw() {
-  image(video, 0, 0, width, height);
+  // 2. 設定畫布背景顏色
+  background('#e7c6ff');
 
-  // We can call both functions to draw all keypoints and the skeletons
-  drawKeypoints();
-  drawSkeleton();
+  // 3. 計算 50% 的影像寬高
+  let displayW = width * 0.5;
+  let displayH = height * 0.5;
+
+  // 4. 計算置中位置
+  let x = (width - displayW) / 2;
+  let y = (height - displayH) / 2;
+
+  // 5. 繪製影像於畫面中央
+  image(video, x, y, displayW, displayH);
+
+  // 6. 繪製手部線條
+  drawHandLines(x, y, displayW, displayH);
 }
 
-// A function to draw ellipses over the detected keypoints
-function drawKeypoints()  {
-  // Loop through all the poses detected
-  for (let i = 0; i < poses.length; i++) {
-    // For each pose detected, loop through all the keypoints
-    let pose = poses[i].pose;
-    for (let j = 0; j < pose.keypoints.length; j++) {
-      // A keypoint is an object describing a body part (like rightArm or leftShoulder)
-      let keypoint = pose.keypoints[j];
-      // Only draw an ellipse is the pose probability is bigger than 0.2
-      if (keypoint.score > 0.2) {
-        fill(255, 0, 0);
-        noStroke();
-        ellipse(keypoint.position.x, keypoint.position.y, 10, 10);
+function drawHandLines(offX, offY, vW, vH) {
+  for (let i = 0; i < hands.length; i++) {
+    let hand = hands[i];
+    
+    // 根據需求定義的手指關鍵點群組
+    let segments = [
+      [0, 1, 2, 3, 4],     // 拇指
+      [5, 6, 7, 8],        // 食指
+      [9, 10, 11, 12],     // 中指
+      [13, 14, 15, 16],    // 無名指
+      [17, 18, 19, 20]     // 小指
+    ];
+
+    stroke(255, 0, 0); // 設定線條顏色為紅色
+    strokeWeight(3);   // 設定線條粗細
+
+    for (let segment of segments) {
+      for (let j = 0; j < segment.length - 1; j++) {
+        let pt1 = hand.keypoints[segment[j]];
+        let pt2 = hand.keypoints[segment[j + 1]];
+
+        // 將座標從原始影片尺寸 (640x480) 映射到螢幕上顯示的區域 (displayW x displayH)
+        let x1 = map(pt1.x, 0, video.width, offX, offX + vW);
+        let y1 = map(pt1.y, 0, video.height, offY, offY + vH);
+        let x2 = map(pt2.x, 0, video.width, offX, offX + vW);
+        let y2 = map(pt2.y, 0, video.height, offY, offY + vH);
+
+        line(x1, y1, x2, y2);
       }
-    }
-  }
-}
-
-// A function to draw the skeletons
-function drawSkeleton() {
-  // Loop through all the skeletons detected
-  for (let i = 0; i < poses.length; i++) {
-    let skeleton = poses[i].skeleton;
-    // For every skeleton, loop through all body connections
-    for (let j = 0; j < skeleton.length; j++) {
-      let partA = skeleton[j][0];
-      let partB = skeleton[j][1];
-      stroke(255, 0, 0);
-      line(partA.position.x, partA.position.y, partB.position.x, partB.position.y);
     }
   }
 }
