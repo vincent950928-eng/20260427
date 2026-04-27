@@ -65,17 +65,17 @@ function draw() {
     }
   }
 
-  // 8. 在畫布正中間顯示文字
-  drawCenterText();
+  // 8. 在畫布上方顯示文字
+  drawTopText();
 }
 
-function drawCenterText() {
+function drawTopText() {
   push();
   fill(0); // 文字顏色設為黑色
   noStroke();
   textSize(32);
-  textAlign(CENTER, CENTER);
-  text('414730969陳威成', width / 2, height / 2);
+  textAlign(CENTER, TOP);
+  text('414730969陳威成', width / 2, 20); // 置中於寬度，垂直位於上方 20 像素處
   pop();
 }
 
