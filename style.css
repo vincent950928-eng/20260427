@@ -1,0 +1,14 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #e7c6ff;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+}
+
+* {
+    font-family: sans-serif;
+}
